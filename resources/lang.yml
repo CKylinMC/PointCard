@@ -1,0 +1,60 @@
+#langfile for PointCard 2
+langname: 中文简体
+langauthor: CKylinMC
+langversion: 2
+###############################
+title: ======|CDK|======
+cdk: 卡密
+stat: 状态
+has-got-by: 来晚了哦！卡密被领走了：
+has-got: 来晚了哦！卡密被领光了！
+has-got-error: 未知错误( has-got-error )，请前往官网提交bug！
+add-money: 金钱已被添加到
+add-days: 的VIP天数增加
+add-point: 点券已被添加到
+ones-account: 的账户中
+day: 天
+get-Prefix: 获得称号
+use-completely: 兑换完成
+Unknow-cdk: 卡密不正确，请检查拼写。卡密区分大小写，不包含符号！
+permission-denied: 权限不足
+obj-error: 属性不正确( OBJ-error )
+Removed: 已移除
+Changed: 已修改
+Generated: 已生成
+obj-unknow: 未知属性
+cdkinfotitle: ======|查询CDK|======
+vipinfotitle: ======|查询VIP|======
+vipinfo-lv: 当前等级：
+vipinfo-days: 剩余天数：
+vipinfo-target: 玩家昵称：
+vipinfo-notvip: 玩家还不是VIP！
+vipinfo-warn: VIP即将到期！
+used-player: 领取者
+perms-denied: 权限不足( perms-denied )
+please-defined-an-option-at-least: 请至少指定一个参数！
+still-in-dev: + 仍在开发中 +
+run-in-game: 请在游戏中运行
+someone-is-trying-to-gen-a-cdk-but-failed-cause-perms-denied: 正在尝试生成卡密，但是已经被阻止，原因：权限不足
+saved-and-exited: 已保存并退出
+pls-set-as-exp: 请按照配置文件中的example格式设置
+pc-usage-simple: 使用方法：/pc <卡密>
+vip-add-same: 当前VIP天数成功增加！
+vip-add-big: VIP已升级，天数将缩减为原剩余天数的一半加卡密内天数！
+vip-add-small: 欲添加VIP级别小于当前您的级别，已保持级别并增加天数！
+vip-add-param-failed: 出现错误( vip-add-param-failed )，请前往官网提交bug！
+vip-add-level-unknow: 出现错误( vip-add-level-unknow )，请前往官网提交bug！
+vip-check-cmd: 使用"/vipinfo"查询您的VIP信息！
+vip-check-perms-denied: 你只能查询自己的VIP信息~
+cdk-reopened: 已经重置了一个CDK：
+cdk-send-1: 发~福~利~啦！刚出炉的CDK，快来兑换吧：
+cdk-send-2: CDK区分大小写，使用 " /pc cdk "兑换！
+###############################
+vipdays: VIP天数
+viplevel: VIP等级
+points: 点券
+money: 金钱
+prefix: 称号
+player: 玩家
+count: 剩余次数
+single-time: 单次使用

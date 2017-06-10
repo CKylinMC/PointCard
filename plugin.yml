@@ -1,0 +1,51 @@
+name: PointCard
+main: CsNle\PointCard\Main
+version: 2.0.0
+api: [1.0.0]
+load: POSTWORLD
+author: CKylinMC
+commands:
+ pc:
+  description: "PointCard兑换"
+  usage: "/pc <cdk>"
+  permission: pc.cmd.pc
+ pcmgr:
+  description: "PointCard管理"
+  usage: "/pcmgr <options>"
+  permission: pc.cmd.pcmgr
+ pcgen:
+  description: "PointCard生成"
+  usage: "/pcgen <options>"
+  permission: pc.cmd.pcgen
+ pcget:
+  description: "PointCard获取"
+  usage: "/pcget <cdk>"
+  permission: pc.cmd.pcget
+ pcreset:
+  description: "PointCard重置"
+  usage: "/pcreset <cdk>"
+  permission: pc.cmd.pcreset
+ vipinfo:
+  description: "VIP信息打印"
+  usage: "/vipinfo <player>"
+  permission: pc.cmd.vipinfo
+permissions:
+ pc.cmd.pc:
+  description: "玩家兑换权限"
+  default: true
+ pc.cmd.vipinfo:
+  description: "玩家VIP查询权限"
+  default: true
+ pc.cmd.pcmgr:
+  description: "管理员管理权"
+  default: op
+ pc.cmd.pcgen:
+  description: "卡密生成权限"
+  default: op
+ pc.cmd.pcget:
+  description: "卡密查看权限"
+  default: op
+ pc.cmd.pcreset:
+  description: "卡密重置权限"
+  default: op
+
