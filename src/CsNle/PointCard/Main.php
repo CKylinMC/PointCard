@@ -57,6 +57,11 @@ class Main extends PluginBase implements Listener
 		$this->cmds = new Config($this->path."cmds.yml", Config::YAML,array(
 			'broadcast'=>'say %p opened a point card!',
 		));
+		$this->log = new Config($this->path."logs.yml", Config::YAML,array(
+			'WhoHasVisitedYourWorld?'=>array(
+				'Herobrine',
+			),
+		));
 		
 		if(!$this->cfg->exists("EXAMPLE"))
 		{
@@ -103,6 +108,13 @@ class Main extends PluginBase implements Listener
 					if($this->cfg->exists($args[0])) {
 						$key = $args[0];
 						$cdk = $this->cfg->get($key);
+
+						//禁止重复领取逻辑
+						if($this->hasUsed($s->getName(),$key)){
+							$this->sendlang('cdk-hasused',$s);
+							return true;
+						}
+
 						//兼容旧版
 						if(!isset($cdk['remain']))
 						{
@@ -193,6 +205,7 @@ class Main extends PluginBase implements Listener
 								$key,
 								$cdk
 							);
+							$this->addUsedPlayer($s->getName(),$key);
 							$this->cfg->save();
 							$this->reloadConfig();
 							$this->sendlang('use-completely',$s);
@@ -257,6 +270,17 @@ class Main extends PluginBase implements Listener
 				} else {
 					$this->sendlang("Unknow-cdk",$s);
 				}
+			} else {
+				$this->sendlang("perms-denied",$s);
+				return;
+			}
+		}
+
+		if($cmd=="pclog") {
+			if($s->isOp()){
+				if(empty($args[0])) return false;
+				$this->printLOGmsg($args[0],$s);
+				return true;
 			} else {
 				$this->sendlang("perms-denied",$s);
 				return;
@@ -824,6 +848,56 @@ class Main extends PluginBase implements Listener
 			$cmd = str_replace('%f',$cdkinfo['prefix'],$cmd);
 			$cmd = str_replace('%t',$remain,$cmd);
 			return $cmd;
+		}
+	}
+
+	public function hasUsed($pn,$cdk){
+		// if($this->cfg->exists($cdk)){
+			if($this->log->exists($cdk)){
+				$arr = $this->log->get($cdk);
+				if(in_array($pn,$arr)) return true; 
+				else return false;
+			}else return false;
+		// }else{
+		// 	return false;
+		// }
+	}
+
+	public function getUsedPlayers($cdk){
+		if($this->log->exists($cdk)){
+			return $this->log->get($cdk);
+		} else return [];
+	}
+
+	public function addUsedPlayer($pn,$cdk){
+		if($this->log->exists($cdk)){
+			$arr = $this->log->get($cdk);
+			array_push($arr,$pn);
+			$this->log->set($cdk,$arr);
+		}else{
+			$this->log->set($cdk,[$pn]);
+		}
+	}
+
+	public function printLOGmsg($cdk,$s){
+		$this->sendlang('cdklog-title',$s);
+		$s->sendMessage($this->getlang('cdklog-des').$cdk);
+		if($this->log->exists($cdk)){
+			$list = $this->getUsedPlayers($cdk);
+			$count = count($list);
+			if($count===0){
+				$this->sendlang('cdklog-nomsg',$s);
+			}else{
+				$s->sendMessage($this->getlang('cdklog-count').$count);
+				$plist = '';
+				foreach($list as $pn){
+					$plist .= $pn.', ';
+				}
+				$this->sendlang('cdklog-list',$s);
+				$s->sendMessage($plist);
+			}
+		}else{
+			$this->sendlang('cdklog-nomsg',$s);
 		}
 	}
 

@@ -58,3 +58,10 @@ prefix: 称号
 player: 玩家
 count: 剩余次数
 single-time: 单次使用
+cdklog-title: ======|CDK日志|======
+cdklog-des: 正在查询的CDK：
+cdklog-nomsg: 正在查询的CDK没有记录可以显示。
+cdklog-count: 领取次数：
+cdklog-list: 领取列表：
+
+cdk-hasused: 卡密不能重复使用！

@@ -21,6 +21,10 @@ commands:
   description: "PointCard获取"
   usage: "/pcget <cdk>"
   permission: pc.cmd.pcget
+ pclog:
+  description: "PointCard查询"
+  usage: "/pclog <cdk>"
+  permission: pc.cmd.pclog
  pcreset:
   description: "PointCard重置"
   usage: "/pcreset <cdk>"
@@ -38,6 +42,9 @@ permissions:
   default: true
  pc.cmd.pcmgr:
   description: "管理员管理权"
+  default: op
+ pc.cmd.pclog:
+  description: "卡密日志查询"
   default: op
  pc.cmd.pcgen:
   description: "卡密生成权限"
