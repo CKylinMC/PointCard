@@ -24,22 +24,19 @@ use onebone\economyapi\EconomyAPI;
 
 class Main extends PluginBase implements Listener
 {
-	public function PC_Version() {
-		return '2';
-	}
 
 	public $options = [
+		'enable'    => true,
 		'enableVIP' => true,
 		'enableEco' => true,
+		'PC_Version'=> 2
 	];
 
 //On Enable + Config Create.
 
     public function onEnable() {
-		$this->getLogger()->info(TextFormat::GREEN . 'PointCard Version '.$this->PC_Version().' by CKylinMC');
+		$this->getLogger()->info(TextFormat::GREEN . 'PointCard Version '.$this->options['PC_Version'].' by CKylinMC');
 	    $this->getServer()->getPluginManager()->registerEvents($this, $this);
-		// $this->options['enableVIP'];
-		// $this->options['enableEco'];
         if (!$this->getServer()->getPluginManager()->getPlugin('EconomyAPI')) {
 			$this->options['enableEco'] = false;
 			$this->getLogger()->info(TextFormat::RED . 'Please install EconomyAPI!');
@@ -53,7 +50,27 @@ class Main extends PluginBase implements Listener
 		}
             $this->path = $this->getDataFolder();
 		@mkdir($this->path);@mkdir($this->path);
-		$this->cfg = new Config($this->path."config.yml", Config::YAML,array());
+		$this->opts = new Config($this->path."options.yml", Config::YAML,array(
+			'enable'=>true,
+			'enableEco'=>true,
+			'enableVIP'=>true
+		));
+		if($this->opts->get('enable')!=true){
+			$this->options['enable'] = false;
+			$this->getLogger()->info(TextFormat::RED . 'Service toggled OFF');
+		}
+		if($this->opts->get('enableEco')!=true){
+			$this->options['enableEco'] = false;
+			$this->getLogger()->info(TextFormat::RED . 'EconomyAPI features for PC was disabled by options.yml');
+		}
+		if($this->opts->get('enableVIP')!=true){
+			$this->options['enableVIP'] = false;
+			$this->getLogger()->info(TextFormat::RED . 'RVIP features for PC was disabled by options.yml');
+		}
+		$this->cfg = new Config($this->path."config.yml", Config::YAML,array(
+			"EXAMPLE"=>array("is_used"=>"false//是否被领取","vip_level"=>"3//VIP等级","vip_days"=>"10//VIP天数增加","point"=>"3000//points增加","money"=>"300000//钱数增加","prefix"=>"Example//获得的头衔,.(英文点号)表示不更改","cmd"=>"false//执行的指令预设(console身份)使用false代表无动作(以上所有//以及后面内容在真实填写时都不要填写)"),
+			"hFngJbgKBf"=>array("is_used"=>"示例玩家","vip_level"=>"2","vip_days"=>"20","point"=>"90000","money"=>"90000","prefix"=>"杀灭狂魔","cmd"=>"broadcast")
+		));
 		$this->cmds = new Config($this->path."cmds.yml", Config::YAML,array(
 			'broadcast'=>'say %p opened a point card!',
 		));
@@ -62,19 +79,6 @@ class Main extends PluginBase implements Listener
 				'Herobrine',
 			),
 		));
-		
-		if(!$this->cfg->exists("EXAMPLE"))
-		{
-			$this->cfg->set("EXAMPLE",array("is_used"=>"false//是否被领取","vip_level"=>"3//VIP等级","vip_days"=>"10//VIP天数增加","point"=>"3000//points增加","money"=>"300000//钱数增加","prefix"=>"Example//获得的头衔,.(英文点号)表示不更改","cmd"=>"false//执行的指令预设(console身份)使用false代表无动作(以上所有//以及后面内容在真实填写时都不要填写)"));
-			$this->cfg->save();
-			
-             $this->getLogger()->info("Please set config file as example.");
-		}
-		if(!$this->cfg->exists("hFngJbgKBf"))
-		{
-			$this->cfg->set("hFngJbgKBf",array("is_used"=>"示例玩家","vip_level"=>"2","vip_days"=>"20","point"=>"90000","money"=>"90000","prefix"=>"杀灭狂魔","cmd"=>"broadcast"));
-			$this->cfg->save();
-		}
 		
 		//Lang file will be added in some times.
 			$this->lang = new Config($this->getDataFolder() . 'lang.yml', Config::YAML, yaml_parse(stream_get_contents($resource = $this->getResource('lang.yml'))));
@@ -85,7 +89,7 @@ class Main extends PluginBase implements Listener
 			$langauthor = $this->getlang('langauthor');
 			$langver = $this->getlang('langversion');
             $this->getLogger()->info("Loaded lang file for ".$langname." by ".$langauthor);
-			if($langver!=$this->PC_Version()){
+			if($langver!=$this->options['PC_Version']){
 				$this->getLogger()->info(TextFormat::RED . 'Lang file version is not same as PointCard version, may cause some error.');
 			}
             $this->saveDefaultConfig();
@@ -103,6 +107,10 @@ class Main extends PluginBase implements Listener
 	
 	public function onCommand(CommandSender $s, Command $cmd, $label, array $args) {
 		if($cmd=="pc") {
+			if($this->options['enable']===false){
+				$this->sendlang('service-stopped',$s);
+				return true;
+			}
 			if($s instanceof Player) {
 				if(isset($args[0])) {
 					if($this->cfg->exists($args[0])) {
@@ -114,7 +122,7 @@ class Main extends PluginBase implements Listener
 							$this->sendlang('cdk-hasused',$s);
 							return true;
 						}
-
+						//MARK: using cdk
 						//兼容旧版
 						if(!isset($cdk['remain']))
 						{
@@ -124,10 +132,18 @@ class Main extends PluginBase implements Listener
 								$cdk['remain'] = -3;
 							}
 						}
-						if($cdk['is_used']==='false' && ($cdk['remain']>0 || $cdk['remain']==-2)){
+						if(!isset($cdk['expire']))
+						{
+							$cdk['expire'] = 24*365;
+						}
+						if($cdk['remain']>0 || ($cdk['is_used']==='false' || $cdk['remain']==-2)){
 							$this->sendlang('title',$s);
 							$s->sendMessage('+ '.$this->getlang('cdk').': '.$key);
 							$s->sendMessage('+ '.$this->getlang('stat').'：');
+							if($this->is_Expired($cdk['expire'])) {
+								$s->sendMessage('+ '.$this->getlang('cdk-expired'));
+								return true;
+							}
 							if($this->options['enableEco']){
 								if(!empty($cdk['money'])){
 									EconomyAPI::getInstance()->addMoney($s,$cdk['money']);
@@ -318,6 +334,7 @@ class Main extends PluginBase implements Listener
 					$days = 0;
 					$point = 0;
 					$money = 0;
+					$expire = 24 * 365;
 					$prefix = '';
 					$msg = false;//TODO
 					$cmd = false;
@@ -372,6 +389,10 @@ class Main extends PluginBase implements Listener
 										if($value<=0) break;
 										$remain = $value;
 										break;
+									case 'EXPIRE':
+										// $modified = true;
+										$expire = $value;
+										break;
 								}
 							}
 						}
@@ -386,6 +407,7 @@ class Main extends PluginBase implements Listener
 						'vip_days'=>$days,
 						'vip_level'=>$level,
 						'point'=>$point,
+						'expire'=>$this->getTargetTime($expire),
 						'money'=>$money,
 						'prefix'=>$prefix,
 						'cmd'=>$cmd
@@ -416,7 +438,7 @@ class Main extends PluginBase implements Listener
 				return true;
 			}
 		}
-		
+		//MARK: pcmgr
 		if($cmd=="pcmgr"){
 			if(!isset($args[0])){
 				$s->sendMessage('Usage /pcmgr help');
@@ -427,10 +449,56 @@ class Main extends PluginBase implements Listener
 				return true;
 			}
 			$cmdp = $args[0];
-				$all = $this->cfg->getAll();
+			$all = $this->cfg->getAll();
 			//TODO
-			if($cmdp=='ls'){
-				$s->sendMessage('Please use "/pcget" instead.');
+			if($cmdp=='enable'){
+				if(!isset($args[1])){
+					$s->sendMessage('Usage：/pcmgr enable <feature> [<true|false>]');
+					return true;
+				}
+				if($args[1]=='rvip'){
+					if(!isset($args[2]) || $args[2]=='true'){
+						$this->option['enableVIP'] = true;
+						$s->sendMessage('RVIP => ENABLED');
+					}elseif($args[2]=='false'){
+						$this->option['enableVIP'] = false;
+						$s->sendMessage('RVIP => DISABLED');
+					}else{
+						$stat = $this->option['enableVIP'] ? 'ENABLED' : 'DISABLED';
+						$s->sendMessage('RVIP => '.$stat);
+					}
+					return true;
+				}
+				if($args[1]=='econ'){
+					if(!isset($args[2]) || $args[2]=='true'){
+						$this->option['enableEco'] = true;
+						$s->sendMessage('EconomyAPI => ENABLED');
+					}elseif($args[2]=='false'){
+						$this->option['enableEco'] = false;
+						$s->sendMessage('EconomyAPI => DISABLED');
+					}else{
+						$stat = $this->option['enableEco'] ? 'ENABLED' : 'DISABLED';
+						$s->sendMessage('EconomyAPI => '.$stat);
+					}
+					return true;
+				}
+				if($args=='pc'){
+					//MARK:TOGGLE
+					if(!isset($args[2]) || $args[2]=='true'){
+						$this->option['enable'] = true;
+						$s->sendMessage('PointCard Main Service => ENABLED');
+						$this->getLogger()->info(TextFormat::GREEN . 'Service toggled ON.');
+					}elseif($args[2]=='false'){
+						$this->option['enableEco'] = false;
+						$s->sendMessage('PointCard Main Service => DISABLED');
+						$this->getLogger()->info(TextFormat::RED . 'Service toggled OFF.');
+					}else{
+						$stat = $this->option['enableEco'] ? 'enabled' : 'disabled';
+						$s->sendMessage('PointCard Main Service '.$stat);
+					}
+					return true;
+				}
+				$s->sendMessage('Usage：/pcmgr enable <feature> [<true|false>]');
 				return true;
 			} elseif($cmdp=='del') {
 				if(!isset($args[1])){
@@ -443,75 +511,68 @@ class Main extends PluginBase implements Listener
 				}
 				$this->cfg->remove($args[1]);
 				$s->sendMessage('CDK-'.$args[1].$this->getlang('Removed'));
-				$this->reloadcfg();
+				$this->saveallcfg();
 				return true;
-			} elseif($cmdp=='edit'){
-				if(count($args)<4){
-					$s->sendMessage('Usage： /pcmgr edit <cdk> <prj> <obj>');
-					$s->sendMessage('prj: vip/point/money/prefix');
-					return true;
+			} elseif($cmdp=='clean') {
+				$cdks = $this->cfg->getAll();
+				$cleanc = 0;
+				foreach($cdks as $key => $cdk){
+					//MARK:clean
+						if(!isset($cdk['remain']))
+						{
+							if($cdk['is_used']==='false'){
+								$cdk['remain'] = -2;
+							}else{
+								$cdk['remain'] = -3;
+							}
+						}
+						if(!isset($cdk['expire']))
+						{
+							$cdk['expire'] = 24*365;
+						}
+						// if((!($cdk['remain']>0 || ($cdk['is_used']==='false' || $cdk['remain']==-2))) || $this->is_Expired($cdk['expired'])){
+						// 	$this->cfg->remove($key);
+						// 	$s->sendMessage('CDK-'.$key.$this->getlang('Removed'));
+						// 	$cleanc++;
+						// }
+						if($cdk['remain']==-3){
+							//singletime used
+							$this->printCDKmsg($key,$s);
+							// $this->cfg->remove($key);
+							unset($cdks[$key]);
+							$s->sendMessage('CDK-'.$key.$this->getlang('Removed').': '.$this->getlang('clean-singletime'));
+							$cleanc++;
+							continue;
+						}
+						if($cdk['remain']==0){
+							//multietime empty
+							$this->printCDKmsg($key,$s);
+							// $this->cfg->remove($key);
+							unset($cdks[$key]);
+							$s->sendMessage('CDK-'.$key.$this->getlang('Removed').': '.$this->getlang('clean-multietime'));
+							$cleanc++;
+							continue;
+						}
+						if($this->is_Expired($cdk['expire'])){
+							//expired
+							$this->printCDKmsg($key,$s);
+							// $this->cfg->remove($key);
+							unset($cdks[$key]);
+							$s->sendMessage('CDK-'.$key.$this->getlang('Removed').': '.$this->getlang('clean-expired'));
+							$cleanc++;
+							continue;
+						}
 				}
-				if(!$this->cfg->exists($args[1])){
-					$s->sendMessage($this->getlang('Unknow-cdk'));
-					return true;
-				}
-				$prj = $args[2];
-				$obj = $args[3];
-				if($prj=='vip') {
-					if(!is_numeric($obj)) {
-						$s->sendMessage($this->getlang('obj-error'));
-						return true;
-					}
-					$get = $this->cfg->get($prj);
-					$this->cfg->set($args[1],array('is_used'=>'false','vip'=>$obj,'point'=>$all[$args[1]]['point'],'money'=>$all[$args[1]]['money'],'prefix'=>$all[$args[1]]['prefix'],'cmd'=>'false'));
-					$s->sendMessage($this->getlang('Changed').$args[1]);
-					$this->printCDKmsg($args[1],$s);
-				$this->reloadcfg();
-					return true;
-				}
-				if($prj=='point') {
-					if(!is_numeric($obj)) {
-						$s->sendMessage($this->getlang('obj-error'));
-						return true;
-					}
-					$get = $this->cfg->get($prj);
-					$this->cfg->set($args[1],array('is_used'=>'false','vip'=>$all[$args[1]]['vip'],'point'=>$obj,'money'=>$all[$args[1]]['money'],'prefix'=>$all[$args[1]]['prefix'],'cmd'=>'false'));
-					$s->sendMessage($this->getlang('Changed').$args[1]);
-					$this->printCDKmsg($args[1],$s);
-				$this->reloadcfg();
-					return true;
-				}
-				if($prj=='money') {
-					if(!is_numeric($obj)) {
-						$s->sendMessage($this->getlang('obj-error'));
-						return true;
-					}
-					$get = $this->cfg->get($prj);
-					$this->cfg->set($args[1],array('is_used'=>'false','vip'=>$all[$args[1]]['vip'],'point'=>$all[$args[1]]['point'],'money'=>$obj,'prefix'=>$all[$args[1]]['prefix'],'cmd'=>'false'));
-					$s->sendMessage($this->getlang('Changed').$args[1]);
-					$this->printCDKmsg($args[1],$s);
-				$this->reloadcfg();
-					return true;
-				}
-				if($prj=='prefix') {
-					$get = $this->cfg->get($args[1]);
-					$this->cfg->set($args[1],array('is_used'=>'false','vip'=>$all[$args[1]]['vip'],'point'=>$all[$args[1]]['point'],'money'=>$all[$args[1]]['money'],'prefix'=>$obj,'cmd'=>'false'));
-					$s->sendMessage($this->getlang('Changed').$args[1]);
-					$this->printCDKmsg($args[1],$s);
-					return true;
-				} else {
-					$s->sendMessage($this->getlang('obj-unknow'));
-					$s->sendMessage('obj:vip/point/money/prefix');
-					return true;
-				}
+				// array_filter($cdks);
+				$this->cfg->setAll($cdks);
+				$this->saveallcfg();
+				$s->sendMessage($this->getlang('Removed').':'.$cleanc);
+				return true;
 			} elseif ($cmdp=='help'){
 				$s->sendMessage('=-=-=|help|=-=-=');
-				$s->sendMessage('/pcmgr <cmd> <part> <part> <part>');
-				$s->sendMessage('/pcmgr ls');
+				$s->sendMessage('/pcmgr enable <feature> [<true|false>]');
 				$s->sendMessage('/pcmgr del <cdk>');
-				$s->sendMessage('/pcmgr edit <cdk> <obj> <value>');
-				$s->sendMessage('obj:vip/point/money/prefix');
-				$s->sendMessage('/pcgen (<front>) <vip> <point> <money> <prefix>');
+				$s->sendMessage('/pcmgr clean');
 				return true;
 			} else {
 				$s->sendMessage('Unknow cmd,type "/pcmgr help" for help');
@@ -535,6 +596,7 @@ class Main extends PluginBase implements Listener
 			$viplevel = $cdks[$cdk]['vip_level'];
 			$point = $cdks[$cdk]['point'];
 			$money = $cdks[$cdk]['money'];
+			$expire = $this->getday($cdks[$cdk]['expire']);
 			$count = $cdks[$cdk]['remain']<0 ? $this->getlang('single-time') : $cdks[$cdk]['remain'];
 			$prefix = empty($cdks[$cdk]['prefix']) ? '无称号' : $cdks[$cdk]['prefix'];
 			$cdkinfo .= ' | '.$this->getlang('vipdays').': '.$vipdays;
@@ -543,6 +605,7 @@ class Main extends PluginBase implements Listener
 			$cdkinfo .= ' | '.$this->getlang('money').': '.$money;
 			$cdkinfo .= ' | '.$this->getlang('prefix').': '.$prefix;
 			$cdkinfo .= ' | '.$this->getlang('count').': '.$count;
+			$cdkinfo .= ' | '.$this->getlang('expire-day').': '.$expire;
 			return $cdkinfo;
 		}
 	}
@@ -553,6 +616,16 @@ class Main extends PluginBase implements Listener
 	}
 	
 	//API
+
+	public function msg($msg,$ps){
+		if(!is_array($ps)){
+			$ps = [$ps];
+		}
+		foreach($ps as $p){
+			$p->sendMessage($msg);
+		}
+	}
+
 	public function msgALL($msg,$console = true) {//broadcast
 	if(!isset($msg)) { return false; }
 	$allp = $this->getServer()->getOnlinePlayers();
@@ -590,10 +663,10 @@ class Main extends PluginBase implements Listener
 		$p->sendMessage($msg);
 	}
 	
-	public function reloadcfg() {
+	public function saveallcfg() {
 		$this->cfg->save();
-            $this->saveDefaultConfig();
-            $this->reloadConfig();
+		$this->cmds->save();
+		$this->log->save();
 	}
 	
 	// Follows api is some basic apis.Ready for something.
@@ -729,6 +802,16 @@ class Main extends PluginBase implements Listener
                 }
                 $result = array('REMAIN',(int) $value,'checked'=>true);
                 break;
+			case 'youxiaoqi':
+			case 'expire':
+			case 'guoqi':
+			case 'daoqi':
+			case 'e':
+                // if((!is_numeric($value))){
+                //     return false;
+                // }
+                $result = array('EXPIRE',(int) $value,'checked'=>true);
+                break;
             default:
                 $result = false;
         }
@@ -740,7 +823,7 @@ class Main extends PluginBase implements Listener
 			$c = $this->cfg->get($cdk);
 			$c['is_used'] = 'false';
 			$this->cfg->set($cdk,$c);
-			$this->reloadcfg();
+			$this->saveallcfg();
 			$this->getLogger()->info(TextFormat::GREEN . $this->getlang('cdk-reopened').$cdk);
 			return true;
 		}else{
@@ -839,14 +922,20 @@ class Main extends PluginBase implements Listener
 			$pn = $p->getName();
 			$remain = $cdkinfo['remain']<0 ? $this->getlang('single-time') : $cdkinfo['remain'];
 			$cmd = $this->cmds->get($key);
-			$cmd = str_replace('%p',$pn,$cmd);
-			$cmd = str_replace('%c',$cdk,$cmd);
-			$cmd = str_replace('%d',$cdkinfo['vip_days'],$cmd);
-			$cmd = str_replace('%l',$cdkinfo['vip_level'],$cmd);
-			$cmd = str_replace('%m',$cdkinfo['money'],$cmd);
-			$cmd = str_replace('%o',$cdkinfo['point'],$cmd);
-			$cmd = str_replace('%f',$cdkinfo['prefix'],$cmd);
-			$cmd = str_replace('%t',$remain,$cmd);
+			$cmd = str_replace('%pn%',$pn,$cmd);
+			$cmd = str_replace('%cdk%',$cdk,$cmd);
+			$cmd = str_replace('%vipdays%',$cdkinfo['vip_days'],$cmd);
+			$cmd = str_replace('%viplv%',$cdkinfo['vip_level'],$cmd);
+			$cmd = str_replace('%money%',$cdkinfo['money'],$cmd);
+			$cmd = str_replace('%point%',$cdkinfo['point'],$cmd);
+			$cmd = str_replace('%prefix%',$cdkinfo['prefix'],$cmd);
+			$cmd = str_replace('%remain%',$remain,$cmd);
+			$cmd = str_replace('%onlinecount%',$this->getPlayerCounts(),$cmd);
+			$cmd = str_replace('%time%',date('H:i'),$cmd);
+			$cmd = str_replace('%times%',date('H:i:s'),$cmd);
+			$cmd = str_replace('%date%',date('Y-m-d'),$cmd);
+			$cmd = str_replace('%datetime%',date('Y-m-d H:i'),$cmd);
+			$cmd = str_replace('%datetimes%',date('Y-m-d H:i:s'),$cmd);
 			return $cmd;
 		}
 	}
@@ -899,6 +988,25 @@ class Main extends PluginBase implements Listener
 		}else{
 			$this->sendlang('cdklog-nomsg',$s);
 		}
+	}
+
+	public function getday($t){
+		return date('Y-m-d H:i',$t);
+	}
+
+	public function getPlayerCounts(){
+		return count($this->getServer()->getOnlinePlayers());
+	}
+
+	public function getTargetTime($t){
+        // if(!is_numeric($t)) return 24 * 365;
+		return strtotime('+'.$t.' hours');
+	}
+
+	public function is_Expired($t){
+        // if(!is_numeric($t)) return true;
+		$now = time();
+		if($t>$now) return false; else return true;
 	}
 
 }

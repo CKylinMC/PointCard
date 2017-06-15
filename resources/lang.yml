@@ -57,11 +57,16 @@ money: 金钱
 prefix: 称号
 player: 玩家
 count: 剩余次数
+expire-day: 到期时间
 single-time: 单次使用
 cdklog-title: ======|CDK日志|======
 cdklog-des: 正在查询的CDK：
 cdklog-nomsg: 正在查询的CDK没有记录可以显示。
 cdklog-count: 领取次数：
 cdklog-list: 领取列表：
-
+cdk-expired: 卡密已经过期！
 cdk-hasused: 卡密不能重复使用！
+service-stopped: 卡密兑换服务暂停，请咨询管理。
+clean-singletime: 单次用卡密|已使用
+clean-multietime: 多次用卡密|已用尽
+clean-expired: 卡密已过期
