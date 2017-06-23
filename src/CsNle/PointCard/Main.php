@@ -24,6 +24,12 @@ use onebone\economyapi\EconomyAPI;
 
 class Main extends PluginBase implements Listener
 {
+	public static $PC = null;
+	
+    public function onLoad()
+    {
+        self::$PC = $this;
+    }
 
 	public $options = [
 		'enable'    => true,
@@ -1007,6 +1013,38 @@ class Main extends PluginBase implements Listener
         // if(!is_numeric($t)) return true;
 		$now = time();
 		if($t>$now) return false; else return true;
+	}
+
+	public function genCDKbyAPI($cfg){
+		$front = empty($cfg['front']) ? '' : $cfg['front'];
+		$remain = empty($cfg['remain']) ? -2 : $cfg['remain'];
+		$count = empty($cfg['count']) ? 5 : $cfg['count'];
+		$level = empty($cfg['level']) ? 0 : $cfg['level'];
+		$days = empty($cfg['days']) ? 0 : $cfg['days'];
+		$point = empty($cfg['point']) ? 0 : $cfg['point'];
+		$money = empty($cfg['money']) ? 0 : $cfg['money'];
+		$expire = empty($cfg['expire']) ? 24 * 365 : $cfg['expire'];
+		$prefix = empty($cfg['prefix']) ? '' : $cfg['prefix'];
+		$msg = empty($cfg['msg']) ? false : $cfg['msg'];//TODO
+		$cmd = empty($cfg['cmd']) ? false : $cfg['cmd'];
+		$cdkcfg = array(
+			'is_used'=>'false',
+			'remain'=>$remain,
+			'vip_days'=>$days,
+			'vip_level'=>$level,
+			'point'=>$point,
+			'expire'=>$this->getTargetTime($expire),
+			'money'=>$money,
+			'prefix'=>$prefix,
+			'cmd'=>$cmd
+		);
+			$cdkey = $this->generator($front);
+			$this->cfg->set($cdkey,$cdkcfg);
+			
+			
+		$this->cfg->save();
+		$this->reloadConfig();
+		return $cdkey;
 	}
 
 }
