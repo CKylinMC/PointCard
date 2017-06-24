@@ -47,6 +47,8 @@ vip-add-level-unknow: 出现错误( vip-add-level-unknow )，请前往官网提�
 vip-check-cmd: 使用"/vipinfo"查询您的VIP信息！
 vip-check-perms-denied: 你只能查询自己的VIP信息~
 cdk-reopened: 已经重置了一个CDK：
+cdk-closed: 已经关闭了一个CDK：
+cdk-ClosedByAdmin: CDK已经失效
 cdk-send-1: 发~福~利~啦！刚出炉的CDK，快来兑换吧：
 cdk-send-2: CDK区分大小写，使用 " /pc cdk "兑换！
 ###############################

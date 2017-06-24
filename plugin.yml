@@ -1,6 +1,6 @@
 name: PointCard
 main: CsNle\PointCard\Main
-version: 2.0.2
+version: 2.0.3
 api: [1.0.0]
 load: POSTWORLD
 author: CKylinMC
@@ -29,6 +29,10 @@ commands:
   description: "PointCard重置"
   usage: "/pcreset <cdk>"
   permission: pc.cmd.pcreset
+ pcclose:
+  description: "PointCard关闭"
+  usage: "/pcclose <cdk>"
+  permission: pc.cmd.pcclose
  vipinfo:
   description: "VIP信息打印"
   usage: "/vipinfo <player>"
@@ -54,5 +58,8 @@ permissions:
   default: op
  pc.cmd.pcreset:
   description: "卡密重置权限"
+  default: op
+ pc.cmd.pcclose:
+  description: "卡密关停权限"
   default: op
 

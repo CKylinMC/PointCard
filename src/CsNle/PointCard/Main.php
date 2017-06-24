@@ -35,13 +35,14 @@ class Main extends PluginBase implements Listener
 		'enable'    => true,
 		'enableVIP' => true,
 		'enableEco' => true,
-		'PC_Version'=> 2
+		'PC_Version'=> 2,
+		'VersionTag'=> 'v2.0.3'
 	];
 
 //On Enable + Config Create.
 
     public function onEnable() {
-		$this->getLogger()->info(TextFormat::GREEN . 'PointCard Version '.$this->options['PC_Version'].' by CKylinMC');
+		$this->getLogger()->info(TextFormat::GREEN . 'PointCard '.$this->options['VersionTag'].' by CKylinMC');
 	    $this->getServer()->getPluginManager()->registerEvents($this, $this);
         if (!$this->getServer()->getPluginManager()->getPlugin('EconomyAPI')) {
 			$this->options['enableEco'] = false;
@@ -122,6 +123,11 @@ class Main extends PluginBase implements Listener
 					if($this->cfg->exists($args[0])) {
 						$key = $args[0];
 						$cdk = $this->cfg->get($key);
+
+						if($cdk['is_used']=='ClosedByAdmin'){
+							$this->sendlang('cdk-ClosedByAdmin',$s);
+							return true;
+						}
 
 						//禁止重复领取逻辑
 						if($this->hasUsed($s->getName(),$key)){
@@ -314,6 +320,23 @@ class Main extends PluginBase implements Listener
 				if(empty($args[0])) return false;
 				if($this->cfg->exists($args[0])){
 					$this->resetCDK($args[0]);
+					$this->sendlang("cdkinfotitle",$s);
+					$this->printCDKmsg($args[0],$s);
+					return true;
+				} else {
+					$this->sendlang("Unknow-cdk",$s);
+				}
+			} else {
+				$this->sendlang("perms-denied",$s);
+				return;
+			}
+		}
+
+		if($cmd=="pcclose") {
+			if($s->isOp()){
+				if(empty($args[0])) return false;
+				if($this->cfg->exists($args[0])){
+					$this->closeCDK($args[0]);
 					$this->sendlang("cdkinfotitle",$s);
 					$this->printCDKmsg($args[0],$s);
 					return true;
@@ -574,6 +597,13 @@ class Main extends PluginBase implements Listener
 				$this->saveallcfg();
 				$s->sendMessage($this->getlang('Removed').':'.$cleanc);
 				return true;
+			} elseif ($cmdp=='info'){
+				$s->sendMessage('=-=-=| Info |=-=-=');
+				$s->sendMessage('PointCard ',$this->options['VersionTag']);
+				$s->sendMessage('Author: CKylin');
+				$s->sendMessage('Source code: https://github.com/Cansll/PointCard');
+				$s->sendMessage('CDK多功能点卡卡密插件');
+				return true;
 			} elseif ($cmdp=='help'){
 				$s->sendMessage('=-=-=|help|=-=-=');
 				$s->sendMessage('/pcmgr enable <feature> [<true|false>]');
@@ -831,6 +861,19 @@ class Main extends PluginBase implements Listener
 			$this->cfg->set($cdk,$c);
 			$this->saveallcfg();
 			$this->getLogger()->info(TextFormat::GREEN . $this->getlang('cdk-reopened').$cdk);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	public function closeCDK($cdk){
+		if($this->cfg->exists($cdk)){
+			$c = $this->cfg->get($cdk);
+			$c['is_used'] = 'ClosedByAdmin';
+			$this->cfg->set($cdk,$c);
+			$this->saveallcfg();
+			$this->getLogger()->info(TextFormat::GREEN . $this->getlang('cdk-closed').$cdk);
 			return true;
 		}else{
 			return false;
