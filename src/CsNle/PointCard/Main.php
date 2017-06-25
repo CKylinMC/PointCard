@@ -36,7 +36,7 @@ class Main extends PluginBase implements Listener
 		'enableVIP' => true,
 		'enableEco' => true,
 		'PC_Version'=> 2,
-		'VersionTag'=> 'v2.0.3'
+		'VersionTag'=> 'v2.0.4'
 	];
 
 //On Enable + Config Create.
@@ -120,140 +120,7 @@ class Main extends PluginBase implements Listener
 			}
 			if($s instanceof Player) {
 				if(isset($args[0])) {
-					if($this->cfg->exists($args[0])) {
-						$key = $args[0];
-						$cdk = $this->cfg->get($key);
-
-						if($cdk['is_used']=='ClosedByAdmin'){
-							$this->sendlang('cdk-ClosedByAdmin',$s);
-							return true;
-						}
-
-						//禁止重复领取逻辑
-						if($this->hasUsed($s->getName(),$key)){
-							$this->sendlang('cdk-hasused',$s);
-							return true;
-						}
-						//MARK: using cdk
-						//兼容旧版
-						if(!isset($cdk['remain']))
-						{
-							if($cdk['is_used']==='false'){
-								$cdk['remain'] = -2;
-							}else{
-								$cdk['remain'] = -3;
-							}
-						}
-						if(!isset($cdk['expire']))
-						{
-							$cdk['expire'] = 24*365;
-						}
-						if($cdk['remain']>0 || ($cdk['is_used']==='false' || $cdk['remain']==-2)){
-							$this->sendlang('title',$s);
-							$s->sendMessage('+ '.$this->getlang('cdk').': '.$key);
-							$s->sendMessage('+ '.$this->getlang('stat').'：');
-							if($this->is_Expired($cdk['expire'])) {
-								$s->sendMessage('+ '.$this->getlang('cdk-expired'));
-								return true;
-							}
-							if($this->options['enableEco']){
-								if(!empty($cdk['money'])){
-									EconomyAPI::getInstance()->addMoney($s,$cdk['money']);
-									$s->sendMessage('+ '.$cdk['money'].$this->getlang('add-money').$s->getName().$this->getlang('ones-account'));
-								}
-							}
-							if($this->options['enableVIP']){
-								if(!empty($cdk['point'])){
-									$this->vip->Point('add',$s->getName(),$cdk['point']);
-									$s->sendMessage('+ '.$cdk['point'].$this->getlang('add-point').$s->getName().$this->getlang('ones-account'));
-								}
-								if((!empty($cdk['vip_days'])) && (!empty($cdk['vip_level']))){
-									if($cdk['vip_days']>=1 && $cdk['vip_level']>=1){
-										// $this->vip->VIP('add',$s->getName(),$cdk['vip_level'],$cdk['vip_days']);
-										// $s->sendMessage('+ '.$s->getName().$this->getlang('add-days').$cdk['vip'].$this->getlang('day'));
-										$return_code = $this->addVip($s->getName(),$cdk['vip_level'],$cdk['vip_days']);
-										switch($return_code){
-											case 0:
-												$this->sendlang('vip-add-same',$s);
-												break;
-											case 4:
-												$this->sendlang('vip-add-level-unknow',$s);
-												break;
-											case 3:
-												$this->sendlang('vip-add-big',$s);
-												break;
-											case 2:
-												$this->sendlang('vip-add-small',$s);
-												break;
-											case 1:
-												$this->sendlang('vip-add-param-failed',$s);
-												break;
-										}
-									}
-								}
-								//兼容旧版配置
-								if(!empty($cdk['vip'])){
-									$cdk['vip_days'] = $cdk['vip'];
-									$cdk['vip_level'] = 1;
-									if($cdk['vip_days']>=1 && $cdk['vip_level']>=1){
-										// $this->vip->VIP('add',$s->getName(),$cdk['vip_level'],$cdk['vip_days']);
-										// $s->sendMessage('+ '.$s->getName().$this->getlang('add-days').$cdk['vip'].$this->getlang('day'));
-										$return_code = $this->addVip($s->getName(),$cdk['vip_level'],$cdk['vip_days']);
-										switch($return_code){
-											case 0:
-												$this->sendlang('vip-add-same',$s);
-												break;
-											case 4:
-												$this->sendlang('vip-add-level-unknow',$s);
-												break;
-											case 3:
-												$this->sendlang('vip-add-big',$s);
-												break;
-											case 2:
-												$this->sendlang('vip-add-small',$s);
-												break;
-											case 1:
-												$this->sendlang('vip-add-param-failed',$s);
-												break;
-										}
-									}
-								}
-								if((!empty($cdk['prefix']))&&($cdk['prefix']!='false')){
-									$this->vip->Prefix('add',$s->getName(),$cdk['prefix']);
-									$this->msgALL($s->getName().$this->getlang('get-Prefix').$cdk['prefix'],true);
-								}
-							}
-							$cdk['remain']--;
-							if(!empty($cdk['cmd'])){
-								$name = $s->getName();
-								$if = $this->getServer()->dispatchCommand(new ConsoleCommandSender(), $this->parseCmdPresets($cdk['cmd'],$s,$key,$cdk));
-							}
-							$cdk['is_used'] = $this->getlang('player').$s->getName();
-							$this->cfg->set(
-								$key,
-								$cdk
-							);
-							$this->addUsedPlayer($s->getName(),$key);
-							$this->cfg->save();
-							$this->reloadConfig();
-							$this->sendlang('use-completely',$s);
-						} elseif($cdk['remain']==-3) {
-							$this->sendlang('title',$s);
-							$s->sendMessage('+ '.$this->getlang('cdk').': '.$key);
-							$s->sendMessage('+ '.$this->getlang('stat'));
-							$s->sendMessage('+ '.$this->getlang('has-got-by').$cdk['is_used']);
-						}elseif($cdk['remain']==0) {
-							$this->sendlang('title',$s);
-							$s->sendMessage('+ '.$this->getlang('cdk').': '.$key);
-							$s->sendMessage('+ '.$this->getlang('stat'));
-							$s->sendMessage('+ '.$this->getlang('has-got'));
-						}else{
-							$s->sendMessage('+ '.$this->getlang('has-got-error')."({$cdk['remain']}-{$key})");
-						}
-					} else {
-						$this->sendlang('Unknow-cdk',$s);
-						return true;
-					}
+					return $this->openCDK($args[0],$s);
 				} else {
 					$this->sendlang('pc-usage-simple',$s);
 				}
@@ -1088,6 +955,148 @@ class Main extends PluginBase implements Listener
 		$this->cfg->save();
 		$this->reloadConfig();
 		return $cdkey;
+	}
+	//MARK:OPENCDK
+	public function openCDK($key,Player $s){
+		
+		if($this->options['enable']===false){
+			$this->sendlang('service-stopped',$s);
+			return true;
+		}
+		if($this->cfg->exists($key)) {
+			$cdk = $this->cfg->get($key);
+
+			if($cdk['is_used']=='ClosedByAdmin'){
+				$this->sendlang('cdk-ClosedByAdmin',$s);
+				return true;
+			}
+
+			//禁止重复领取逻辑
+			if($this->hasUsed($s->getName(),$key)){
+				$this->sendlang('cdk-hasused',$s);
+				return true;
+			}
+			//MARK: using cdk
+			//兼容旧版
+			if(!isset($cdk['remain']))
+			{
+				if($cdk['is_used']==='false'){
+					$cdk['remain'] = -2;
+				}else{
+					$cdk['remain'] = -3;
+				}
+			}
+			if(!isset($cdk['expire']))
+			{
+				$cdk['expire'] = 24*365;
+			}
+			if($cdk['remain']>0 || ($cdk['is_used']==='false' || $cdk['remain']==-2)){
+				$this->sendlang('title',$s);
+				$s->sendMessage('+ '.$this->getlang('cdk').': '.$key);
+				$s->sendMessage('+ '.$this->getlang('stat').'：');
+				if($this->is_Expired($cdk['expire'])) {
+					$s->sendMessage('+ '.$this->getlang('cdk-expired'));
+					return true;
+				}
+				if($this->options['enableEco']){
+					if(!empty($cdk['money'])){
+						EconomyAPI::getInstance()->addMoney($s,$cdk['money']);
+						$s->sendMessage('+ '.$cdk['money'].$this->getlang('add-money').$s->getName().$this->getlang('ones-account'));
+					}
+				}
+				if($this->options['enableVIP']){
+					if(!empty($cdk['point'])){
+						$this->vip->Point('add',$s->getName(),$cdk['point']);
+						$s->sendMessage('+ '.$cdk['point'].$this->getlang('add-point').$s->getName().$this->getlang('ones-account'));
+					}
+					if((!empty($cdk['vip_days'])) && (!empty($cdk['vip_level']))){
+						if($cdk['vip_days']>=1 && $cdk['vip_level']>=1){
+							// $this->vip->VIP('add',$s->getName(),$cdk['vip_level'],$cdk['vip_days']);
+							// $s->sendMessage('+ '.$s->getName().$this->getlang('add-days').$cdk['vip'].$this->getlang('day'));
+							$return_code = $this->addVip($s->getName(),$cdk['vip_level'],$cdk['vip_days']);
+							switch($return_code){
+								case 0:
+									$this->sendlang('vip-add-same',$s);
+									break;
+								case 4:
+									$this->sendlang('vip-add-level-unknow',$s);
+									break;
+								case 3:
+									$this->sendlang('vip-add-big',$s);
+									break;
+								case 2:
+									$this->sendlang('vip-add-small',$s);
+									break;
+								case 1:
+									$this->sendlang('vip-add-param-failed',$s);
+									break;
+							}
+						}
+					}
+					//兼容旧版配置
+					if(!empty($cdk['vip'])){
+						$cdk['vip_days'] = $cdk['vip'];
+						$cdk['vip_level'] = 1;
+						if($cdk['vip_days']>=1 && $cdk['vip_level']>=1){
+							// $this->vip->VIP('add',$s->getName(),$cdk['vip_level'],$cdk['vip_days']);
+							// $s->sendMessage('+ '.$s->getName().$this->getlang('add-days').$cdk['vip'].$this->getlang('day'));
+							$return_code = $this->addVip($s->getName(),$cdk['vip_level'],$cdk['vip_days']);
+							switch($return_code){
+								case 0:
+									$this->sendlang('vip-add-same',$s);
+									break;
+								case 4:
+									$this->sendlang('vip-add-level-unknow',$s);
+									break;
+								case 3:
+									$this->sendlang('vip-add-big',$s);
+									break;
+								case 2:
+									$this->sendlang('vip-add-small',$s);
+									break;
+								case 1:
+									$this->sendlang('vip-add-param-failed',$s);
+									break;
+							}
+						}
+					}
+					if((!empty($cdk['prefix']))&&($cdk['prefix']!='false')){
+						$this->vip->Prefix('add',$s->getName(),$cdk['prefix']);
+						$this->msgALL($s->getName().$this->getlang('get-Prefix').$cdk['prefix'],true);
+					}
+				}
+				$cdk['remain']--;
+				if(!empty($cdk['cmd'])){
+					$name = $s->getName();
+					$if = $this->getServer()->dispatchCommand(new ConsoleCommandSender(), $this->parseCmdPresets($cdk['cmd'],$s,$key,$cdk));
+				}
+				$cdk['is_used'] = $this->getlang('player').$s->getName();
+				$this->cfg->set(
+					$key,
+					$cdk
+				);
+				$this->addUsedPlayer($s->getName(),$key);
+				$this->cfg->save();
+				$this->reloadConfig();
+				$this->sendlang('use-completely',$s);
+			} elseif($cdk['remain']==-3) {
+				$this->sendlang('title',$s);
+				$s->sendMessage('+ '.$this->getlang('cdk').': '.$key);
+				$s->sendMessage('+ '.$this->getlang('stat'));
+				$s->sendMessage('+ '.$this->getlang('has-got-by').$cdk['is_used']);
+			}elseif($cdk['remain']==0) {
+				$this->sendlang('title',$s);
+				$s->sendMessage('+ '.$this->getlang('cdk').': '.$key);
+				$s->sendMessage('+ '.$this->getlang('stat'));
+				$s->sendMessage('+ '.$this->getlang('has-got'));
+			}else{
+				$s->sendMessage('+ '.$this->getlang('has-got-error')."({$cdk['remain']}-{$key})");
+			}
+		} else {
+			$this->sendlang('Unknow-cdk',$s);
+			return true;
+		}
+		return true;
 	}
 
 }
