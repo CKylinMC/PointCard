@@ -1,4 +1,6 @@
-# 点卡
+![PointCard2](https://cansll.github.io/PointCard2-CMD-Gen/assets/img1.png)
+
+# PointCard2
 
 点卡插件是PocketMine开服器的插件。
 你可以用它创建礼品卡的密码，发送给玩家。
