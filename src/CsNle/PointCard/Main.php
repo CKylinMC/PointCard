@@ -36,7 +36,7 @@ class Main extends PluginBase implements Listener
 		'enableVIP' => true,
 		'enableEco' => true,
 		'PC_Version'=> 2,
-		'VersionTag'=> 'v2.0.4'
+		'VersionTag'=> 'v2.0.5'
 	];
 
 //On Enable + Config Create.
@@ -60,7 +60,8 @@ class Main extends PluginBase implements Listener
 		$this->opts = new Config($this->path."options.yml", Config::YAML,array(
 			'enable'=>true,
 			'enableEco'=>true,
-			'enableVIP'=>true
+			'enableVIP'=>true,
+			'defaultLangFile'=>'lang'
 		));
 		if($this->opts->get('enable')!=true){
 			$this->options['enable'] = false;
@@ -74,42 +75,57 @@ class Main extends PluginBase implements Listener
 			$this->options['enableVIP'] = false;
 			$this->getLogger()->info(TextFormat::RED . 'RVIP features for PC was disabled by options.yml');
 		}
-		$this->cfg = new Config($this->path."config.yml", Config::YAML,array(
-			"EXAMPLE"=>array("is_used"=>"false//是否被领取","vip_level"=>"3//VIP等级","vip_days"=>"10//VIP天数增加","point"=>"3000//points增加","money"=>"300000//钱数增加","prefix"=>"Example//获得的头衔,.(英文点号)表示不更改","cmd"=>"false//执行的指令预设(console身份)使用false代表无动作(以上所有//以及后面内容在真实填写时都不要填写)"),
-			"hFngJbgKBf"=>array("is_used"=>"示例玩家","vip_level"=>"2","vip_days"=>"20","point"=>"90000","money"=>"90000","prefix"=>"杀灭狂魔","cmd"=>"broadcast")
-		));
+		if(!$this->opts->exists('defaultLangFile')){
+			$this->options['defaultLangFile'] = 'lang';
+			$this->opts->set('defaultLangFile','lang');
+			$this->opts->save();
+		}
+		$this->cfg = new Config($this->path."config.yml", Config::YAML,array());
 		$this->cmds = new Config($this->path."cmds.yml", Config::YAML,array(
 			'broadcast'=>'say %p opened a point card!',
 		));
-		$this->log = new Config($this->path."logs.yml", Config::YAML,array(
-			'WhoHasVisitedYourWorld?'=>array(
-				'Herobrine',
-			),
-		));
+		$this->log = new Config($this->path."logs.yml", Config::YAML,array());
 		
-		//Lang file will be added in some times.
-			$this->lang = new Config($this->getDataFolder() . 'lang.yml', Config::YAML, yaml_parse(stream_get_contents($resource = $this->getResource('lang.yml'))));
-			@fclose($resource);
-			// $langname = $this->lang->get('langname');
-			// $langauthor = $this->lang->get('langauthor');
-			$langname = $this->getlang('langname');
-			$langauthor = $this->getlang('langauthor');
-			$langver = $this->getlang('langversion');
-            $this->getLogger()->info("Loaded lang file for ".$langname." by ".$langauthor);
-			if($langver!=$this->options['PC_Version']){
-				$this->getLogger()->info(TextFormat::RED . 'Lang file version is not same as PointCard version, may cause some error.');
-			}
-            $this->saveDefaultConfig();
-            $this->reloadConfig();
-			
-			$this->vip = RVIP::$RVIP;
+		// $this->lang = new Config($this->getDataFolder() . 'lang.yml', Config::YAML, yaml_parse(stream_get_contents($resource = $this->getResource('lang.yml'))));
+		// @fclose($resource);
+		// // $langname = $this->lang->get('langname');
+		// // $langauthor = $this->lang->get('langauthor');
+		// $langname = $this->getlang('langname');
+		// $langauthor = $this->getlang('langauthor');
+		// $langver = $this->getlang('langversion');
+		// $this->getLogger()->info("Loaded lang file for ".$langname." by ".$langauthor);
+		// if($langver!=$this->options['PC_Version']){
+		// 	$this->getLogger()->info(TextFormat::RED . 'Lang file version is not same as PointCard version, may cause some error.');
+		// }
 
-            
+		$this->loadLang();
+
+		$this->vip = RVIP::$RVIP;
 	}
 	
 	public function onDisable() {
 		$this->saveDefaultConfig();
 		$this->getLogger()->info(TextFormat::BLUE . $this->getlang('saved-and-exited'));
+	}
+
+	public function loadLang($filename = false){
+		if(empty($filename)) $filename = $options['defaultLangFile'];
+		$this->lang = new Config($this->getDataFolder() . $filename . '.yml', Config::YAML, yaml_parse(stream_get_contents($resource = $this->getResource('lang.yml'))));
+		@fclose($resource);
+		// $langname = $this->lang->get('langname');
+		// $langauthor = $this->lang->get('langauthor');
+		$langname = $this->getlang('langname');
+		$langauthor = $this->getlang('langauthor');
+		$langver = $this->getlang('langversion');
+		$this->getLogger()->info("Loaded lang file for ".$langname." by ".$langauthor);
+		if($langver!=$this->options['PC_Version']){
+			$this->getLogger()->info(TextFormat::RED . 'Lang file version is not same as PointCard version, may cause some error.');
+		}
+		return [
+			'name'=>$langname,
+			'author'=>$langauthor,
+			'version'=>$langver
+		];
 	}
 	
 	public function onCommand(CommandSender $s, Command $cmd, $label, array $args) {
@@ -349,7 +365,7 @@ class Main extends PluginBase implements Listener
 			//TODO
 			if($cmdp=='enable'){
 				if(!isset($args[1])){
-					$s->sendMessage('Usage：/pcmgr enable <feature> [<true|false>]');
+					$s->sendMessage("Usage：/pcmgr enable <feature> [<true|false>]\nfeatures: rvip|econ|pc");
 					return true;
 				}
 				if($args[1]=='rvip'){
@@ -464,6 +480,17 @@ class Main extends PluginBase implements Listener
 				$this->saveallcfg();
 				$s->sendMessage($this->getlang('Removed').':'.$cleanc);
 				return true;
+			} elseif($cmdp=='setlang') {
+				if(!isset($args[1])){
+					$s->sendMessage('Usage：/pcmgr setlang <langfile>(without ".yml")');
+					return true;
+				}
+				$s->sendMessage('Loading language file: '.$args[1].'.yml ...');
+				$meta = $this->loadLang($args[1]);
+				$metamsg = "Language Metadata: [{$meta['name']}] for PointCard {$meta['version']} - by {$meta['author']}";
+				$s->sendMessage($metamsg);
+				$this->saveallcfg();
+				return true;
 			} elseif ($cmdp=='info'){
 				$s->sendMessage('=-=-=| Info |=-=-=');
 				$s->sendMessage('PointCard ',$this->options['VersionTag']);
@@ -474,6 +501,7 @@ class Main extends PluginBase implements Listener
 			} elseif ($cmdp=='help'){
 				$s->sendMessage('=-=-=|help|=-=-=');
 				$s->sendMessage('/pcmgr enable <feature> [<true|false>]');
+				$s->sendMessage('/pcmgr setlang <langfile>(without ".yml")');
 				$s->sendMessage('/pcmgr del <cdk>');
 				$s->sendMessage('/pcmgr clean');
 				return true;
@@ -484,8 +512,14 @@ class Main extends PluginBase implements Listener
 		}
 		
 	}
-	
+
 	public function getCDK($cdk) {//instead getCDKmsg
+		$cdks = $this->cfg->getAll();
+		if(!isset($cdks[$cdk])) return false;
+		else return $cdks[$cdk];
+	}
+	
+	public function getCDKString($cdk) {//instead getCDKmsg
 		$cdks = $this->cfg->getAll();
 		if(!isset($cdks[$cdk])) {
 			return $this->getlang('Unknow-cdk');
@@ -514,7 +548,7 @@ class Main extends PluginBase implements Listener
 	}
 	
 	public function printCDKmsg($cdk,$p) {//instead printCDKmsg
-		$info = $this->getCDK($cdk);
+		$info = $this->getCDKString($cdk);
 		$p->sendMessage($info);
 	}
 	
@@ -540,17 +574,17 @@ class Main extends PluginBase implements Listener
 		$this->getLogger()->info($msg);
 	}
 }
-//I use new function instead of follows function to print cdk info.
-	public function generator($prefix = "") {
+
+	public function generator($prefix = "",$length = 10) {
 		$lib = array("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z");
-			//$this->getLogger()->info(TextFormat::RED . '1');
-		shuffle($lib);
-			//$this->getLogger()->info(TextFormat::RED . '2');
-		$return = $prefix.$lib[0].$lib[1].$lib[2].$lib[3].$lib[4].$lib[5].$lib[6].$lib[7].$lib[8].$lib[9];
-			//$this->getLogger()->info(TextFormat::RED . '3');
+		$return = $prefix;
+		while($length!=0){
+			$length--;
+			shuffle($lib);
+			$return.= $lib[0];
+		}
 		return $return;
 	}
-	
 	
 	public function getlang($text) {
 		$langs = $this->lang->getAll();
@@ -725,6 +759,7 @@ class Main extends PluginBase implements Listener
 		if($this->cfg->exists($cdk)){
 			$c = $this->cfg->get($cdk);
 			$c['is_used'] = 'false';
+			$c['remain'] = -2;
 			$this->cfg->set($cdk,$c);
 			$this->saveallcfg();
 			$this->getLogger()->info(TextFormat::GREEN . $this->getlang('cdk-reopened').$cdk);
@@ -925,6 +960,10 @@ class Main extends PluginBase implements Listener
 		if($t>$now) return false; else return true;
 	}
 
+	public function directCDK(Array $cfg,Player $p){
+		$this->openCDK($this->genCDKbyAPI($cfg),$p);
+	}
+
 	public function genCDKbyAPI($cfg){
 		$front = empty($cfg['front']) ? '' : $cfg['front'];
 		$remain = empty($cfg['remain']) ? -2 : $cfg['remain'];
@@ -948,17 +987,14 @@ class Main extends PluginBase implements Listener
 			'prefix'=>$prefix,
 			'cmd'=>$cmd
 		);
-			$cdkey = $this->generator($front);
-			$this->cfg->set($cdkey,$cdkcfg);
-			
-			
+		$cdkey = $this->generator($front);
+		$this->cfg->set($cdkey,$cdkcfg);
 		$this->cfg->save();
 		$this->reloadConfig();
 		return $cdkey;
 	}
 	//MARK:OPENCDK
 	public function openCDK($key,Player $s){
-		
 		if($this->options['enable']===false){
 			$this->sendlang('service-stopped',$s);
 			return true;
@@ -1097,6 +1133,10 @@ class Main extends PluginBase implements Listener
 			return true;
 		}
 		return true;
+	}
+
+	public function getAllCDKData(){
+		return $this->cfg->getAll();
 	}
 
 }

@@ -8,7 +8,7 @@ cdk: 卡密
 stat: 状态
 has-got-by: 来晚了哦！卡密被领走了：
 has-got: 来晚了哦！卡密被领光了！
-has-got-error: 未知错误( has-got-error )，请前往官网提交bug！
+has-got-error: 未知错误( has-got-error )，请联系管理员！
 add-money: 金钱已被添加到
 add-days: 的VIP天数增加
 add-point: 点券已被添加到
